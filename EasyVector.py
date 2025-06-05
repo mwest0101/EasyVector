@@ -30,3 +30,4 @@ class Vector:
                 dimensions[1:]
             ) for _ in range(dimensions[0])
         ]
+
