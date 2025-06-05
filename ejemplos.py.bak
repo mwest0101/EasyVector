@@ -13,7 +13,7 @@ vec=Vector.Float(3,3,3)
 vec[1][0][0]=0.0
 print(vec)
 
-vec=Vector.String(4,4)
-vec[0][0]="Hola"
-vec[1][1]="Mundo"
+vec=Vector.String(2,2,2)
+vec[0][0][0]="Hola"
+vec[1][1][0]="Mundo"
 print(vec)
