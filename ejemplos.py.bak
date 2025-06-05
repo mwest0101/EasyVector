@@ -1,5 +1,5 @@
 
-from EasyVector import *
+from EasyVectorK import *
 	# 	print(self)
 vec=Vector.Int(10)
 vec[1]=5
