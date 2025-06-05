@@ -47,46 +47,90 @@ class Vector:
             ) for _ in range(dimensions[0])
         ]
     @staticmethod
-    def print(matrix, defEleLen=10):
+    def format_item(item, defEleLen):
+        if item == "":
+            return " " * defEleLen
+        elif isinstance(item, str):
+            return f"\"{item}\"".ljust(defEleLen)
+        else:
+            return str(item).ljust(defEleLen)
+
+    @staticmethod
+    def render_matrix_block(submatrix, defEleLen):
+        if not isinstance(submatrix, list):
+            contenido = Vector.format_item(submatrix, defEleLen)
+            return [
+                f"╔{'═' * (defEleLen + 2)}╗",
+                f"║ {contenido} ║",
+                f"╚{'═' * (defEleLen + 2)}╝"
+            ]
+
+        if all(not isinstance(i, list) for i in submatrix):
+            fila = [Vector.format_item(x, defEleLen) for x in submatrix]
+            top = "╔" + "╦".join(["═" * (defEleLen + 2)] * len(fila)) + "╗"
+            mid = "║" + "║".join([f" {x} " for x in fila]) + "║"
+            bot = "╚" + "╩".join(["═" * (defEleLen + 2)] * len(fila)) + "╝"
+            return [top, mid, bot]
+
+        # Submatriz 2D o más
+        bloques = [Vector.render_matrix_block(row, defEleLen) for row in submatrix]
+        altura_max = max(len(b) for b in bloques)
+        ancho_max = max(len(line) for b in bloques for line in b)
+
+        for i, b in enumerate(bloques):
+            while len(b) < altura_max:
+                b.insert(-1, "║" + " " * (len(b[0]) - 2) + "║")  # línea vacía antes del borde inferior
+
+        return Vector.combine_blocks_vertically(bloques)
+
+    @staticmethod
+    def combine_blocks_vertically(bloques):
+        result = []
+        ancho = len(bloques[0][0])
+        result.append("╔" + "═" * (ancho - 2) + "╗")
+        for i, block in enumerate(bloques):
+            result.extend(block[1:-1])  # sin marco superior/inferior del subbloque
+            if i < len(bloques) - 1:
+                result.append("╠" + "═" * (ancho - 2) + "╣")
+        result.append("╚" + "═" * (ancho - 2) + "╝")
+        return result
+
+    @staticmethod
+    def print(matrix, defEleLen=7):
         if not isinstance(matrix, list):
             print(str(matrix))
             return
 
         if all(not isinstance(item, list) for item in matrix):
-            # Es un vector simple
             Vector.draw_table([matrix], defEleLen)
-        elif all(isinstance(item, list) and all(not isinstance(subitem, list) for subitem in item) for item in matrix):
-            # Es una matriz 2D
-            Vector.draw_table(matrix, defEleLen)
-        else:
-            # Es una matriz de más dimensiones
-            filas = []
-            max_altura = 0
-            for row in matrix:
-                fila_renderizada = []
-                max_lineas = 0
-                for item in row:
-                    bloque = Vector.render_matrix_block(item, defEleLen)
-                    fila_renderizada.append(bloque)
-                    max_lineas = max(max_lineas, len(bloque))
-                # Rellenar para igualar altura
-                for i in range(len(fila_renderizada)):
-                    while len(fila_renderizada[i]) < max_lineas:
-                        fila_renderizada[i].append(" " * (defEleLen + 4))
-                filas.append(fila_renderizada)
+            return
 
-            ancho = len(filas[0])
-            print("╔" + "╦".join(["═" * (defEleLen + 4)] * ancho) + "╗")
-            for i, fila in enumerate(filas):
-                for linea in range(len(fila[0])):
-                    print("║", end="")
-                    for celda in fila:
-                        print(" " + celda[linea].ljust(defEleLen + 2) + "║", end="")
-                    print()
-                if i < len(filas) - 1:
-                    print("╠" + "╬".join(["═" * (defEleLen + 4)] * ancho) + "╣")
-                else:
-                    print("╚" + "╩".join(["═" * (defEleLen + 4)] * ancho) + "╝")
+        if all(isinstance(row, list) and all(not isinstance(el, list) for el in row) for row in matrix):
+            Vector.draw_table(matrix, defEleLen)
+            return
+
+        filas = []
+        for fila in matrix:
+            fila_renderizada = [Vector.render_matrix_block(celda, defEleLen) for celda in fila]
+            altura = max(len(b) for b in fila_renderizada)
+            for b in fila_renderizada:
+                while len(b) < altura:
+                    b.insert(-1, "║" + " " * (len(b[0]) - 2) + "║")
+            filas.append(fila_renderizada)
+
+        ancho_celda = len(filas[0][0][0])
+        columnas = len(filas[0])
+        print("╔" + "╦".join(["═" * ancho_celda] * columnas) + "╗")
+        for i, fila in enumerate(filas):
+            for linea_idx in range(len(fila[0])):
+                print("║", end="")
+                for celda in fila:
+                    print(celda[linea_idx], end="║")
+                print()
+            if i < len(filas) - 1:
+                print("╠" + "╬".join(["═" * ancho_celda] * columnas) + "╣")
+            else:
+                print("╚" + "╩".join(["═" * ancho_celda] * columnas) + "╝")
 
     @staticmethod
     def draw_table(matriz, defEleLen):
@@ -101,41 +145,3 @@ class Vector:
                 print("╠" + "╬".join(["═" * (defEleLen + 2)] * cols) + "╣")
             else:
                 print("╚" + "╩".join(["═" * (defEleLen + 2)] * cols) + "╝")
-
-    @staticmethod
-    def format_item(item, defEleLen):
-        if item == "":
-            return " " * defEleLen
-        elif isinstance(item, str):
-            return f"\"{item}\"".ljust(defEleLen)
-        else:
-            return str(item).ljust(defEleLen)
-
-    @staticmethod
-    def render_matrix_block(submatrix, defEleLen):
-        """Devuelve una lista de líneas con marco ASCII para una submatriz"""
-        if not isinstance(submatrix, list):
-            return [f"╔{'═' * (defEleLen + 2)}╗",
-                    f"║ {Vector.format_item(submatrix, defEleLen)} ║",
-                    f"╚{'═' * (defEleLen + 2)}╝"]
-
-        if all(not isinstance(item, list) for item in submatrix):
-            contenido = f"║" + "║".join([f" {Vector.format_item(x, defEleLen)} " for x in submatrix]) + "║"
-            top = "╔" + "╦".join(["═" * (defEleLen + 2)] * len(submatrix)) + "╗"
-            bot = "╚" + "╩".join(["═" * (defEleLen + 2)] * len(submatrix)) + "╝"
-            return [top, contenido, bot]
-
-        # Submatriz (2D)
-        filas = []
-        cols = len(submatrix[0])
-        filas.append("╔" + "╦".join(["═" * (defEleLen + 2)] * cols) + "╗")
-        for i, fila in enumerate(submatrix):
-            line = "║"
-            for item in fila:
-                line += f" {Vector.format_item(item, defEleLen)} ║"
-            filas.append(line)
-            if i < len(submatrix) - 1:
-                filas.append("╠" + "╬".join(["═" * (defEleLen + 2)] * cols) + "╣")
-            else:
-                filas.append("╚" + "╩".join(["═" * (defEleLen + 2)] * cols) + "╝")
-        return filas
