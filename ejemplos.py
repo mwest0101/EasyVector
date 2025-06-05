@@ -63,11 +63,16 @@ print(vec)
 Vector.print(vec)
 print("")
 
-vec=Vector.Int(3,3,2)
-vec[0][0][0]=1
-vec[1][0][0]=1
-vec[2][0][0]=1
-
+vec=Vector.Int(2,3,3)
+vec[1][2][2]=1
 print(vec)
 Vector.print(vec)
 print("")
+
+
+
+# vec=Vector.Int(2,3,3,3)
+
+# print(vec)
+# Vector.print(vec)
+# print("")

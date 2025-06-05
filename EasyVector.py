@@ -1,5 +1,5 @@
 class VectorPrint:
-    
+
     @staticmethod
     def format_item(item, defEleLen):
         if item == "":
@@ -10,66 +10,67 @@ class VectorPrint:
             return str(item).ljust(defEleLen)
 
     @staticmethod
-    def render_matrix_block(submatrix, defEleLen):
-        if not isinstance(submatrix, list):
-            contenido = VectorPrint.format_item(submatrix, defEleLen)
-            return [
-                f"╔{'═' * (defEleLen + 2)}╗",
-                f"║ {contenido} ║",
-                f"╚{'═' * (defEleLen + 2)}╝"
-            ]
-
-        if all(not isinstance(i, list) for i in submatrix):
-            fila = [VectorPrint.format_item(x, defEleLen) for x in submatrix]
-            top = "╔" + "╦".join(["═" * (defEleLen + 2)] * len(fila)) + "╗"
-            mid = "║" + "║".join([f" {x} " for x in fila]) + "║"
-            bot = "╚" + "╩".join(["═" * (defEleLen + 2)] * len(fila)) + "╝"
-            return [top, mid, bot]
-
-        bloques = [VectorPrint.render_matrix_block(row, defEleLen) for row in submatrix]
-        altura_max = max(len(b) for b in bloques)
-        for b in bloques:
-            while len(b) < altura_max:
-                b.insert(-1, "║" + " " * (len(b[0]) - 2) + "║")
-        return VectorPrint.combine_blocks_vertically(bloques)
-
-    @staticmethod
-    def combine_blocks_vertically(bloques):
+    def draw_table(matriz, defEleLen):
+        cols = len(matriz[0])
         result = []
-        ancho = len(bloques[0][0])
-        result.append("╔" + "═" * (ancho - 2) + "╗")
-        for i, block in enumerate(bloques):
-            result.extend(block[1:-1])
-            if i < len(bloques) - 1:
-                result.append("╠" + "═" * (ancho - 2) + "╣")
-        result.append("╚" + "═" * (ancho - 2) + "╝")
+        result.append("╔" + "╦".join(["═" * (defEleLen + 2)] * cols) + "╗")
+        for i, fila in enumerate(matriz):
+            result.append("║" + "║".join([f" {VectorPrint.format_item(item, defEleLen)} " for item in fila]) + "║")
+            if i < len(matriz) - 1:
+                result.append("╠" + "╬".join(["═" * (defEleLen + 2)] * cols) + "╣")
+            else:
+                result.append("╚" + "╩".join(["═" * (defEleLen + 2)] * cols) + "╝")
         return result
 
     @staticmethod
     def print(matrix, defEleLen=7):
-        # Si no es lista, imprimir tal cual
         if not isinstance(matrix, list):
             print(str(matrix))
             return
-        
-        # Si es una matriz plana o vector
+
         if all(not isinstance(item, list) for item in matrix):
-            VectorPrint.draw_table([matrix], defEleLen)
+            for line in VectorPrint.draw_table([matrix], defEleLen):
+                print(line)
             return
 
-        # Si es matriz bidimensional normal
-        if all(isinstance(row, list) and all(not isinstance(el, list) for el in row) for row in matrix):
-            VectorPrint.draw_table(matrix, defEleLen)
+        if all(isinstance(row, list) and all(not isinstance(col, list) for col in row) for row in matrix):
+            for line in VectorPrint.draw_table(matrix, defEleLen):
+                print(line)
             return
 
-        # Si es una estructura de más dimensiones
-        # Recorrer recursivamente hasta que cada subnivel sea 2D
         submatrices = VectorPrint.flatten_to_2d_blocks(matrix)
 
+        # Detectar si es una lista plana de bloques (como un vector de matrices)
+        if isinstance(matrix, list) and all(isinstance(e, list) for e in matrix) and all(VectorPrint.is_matrix(sub) for sub in matrix):
+            # Mostrar todos en una sola fila
+            headers = [f"Bloque {i} de {len(submatrices)-1}" for i in range(len(submatrices))]
+            block_lines = [VectorPrint.draw_table(m, defEleLen) for m in submatrices]
+
+            # Calcular máximo de líneas por bloque
+            max_lines = max(len(b) for b in block_lines)
+            for b in block_lines:
+                while len(b) < max_lines:
+                    b.append(" " * len(b[0]))
+
+            # Imprimir encabezados alineados
+            header_line = "     ".join(h.ljust(len(block_lines[i][0])) for i, h in enumerate(headers))
+            print(header_line)
+
+            # Imprimir todas las líneas combinadas horizontalmente
+            for i in range(max_lines):
+                print("     ".join(block[i] for block in block_lines))
+            return
+
+        # Si no son bloques de vector plano, imprimir uno debajo del otro
         for idx, submatrix in enumerate(submatrices):
-            print(f"Bloque #{idx}")
-            VectorPrint.print(submatrix, defEleLen)
+            print(f"Bloque {idx} de {len(submatrices)-1}")
+            for line in VectorPrint.draw_table(submatrix, defEleLen):
+                print(line)
             print()
+
+    @staticmethod
+    def is_matrix(mat):
+        return isinstance(mat, list) and all(isinstance(row, list) and all(not isinstance(el, list) for el in row) for row in mat)
 
     @staticmethod
     def flatten_to_2d_blocks(data):
@@ -77,7 +78,7 @@ class VectorPrint:
         if not isinstance(data, list):
             return [data]
         
-        if all(isinstance(row, list) and all(not isinstance(col, list) for col in row) for row in data):
+        if VectorPrint.is_matrix(data):
             return [data]
         
         blocks = []
@@ -85,19 +86,6 @@ class VectorPrint:
             blocks.extend(VectorPrint.flatten_to_2d_blocks(item))
         return blocks
 
-    @staticmethod
-    def draw_table(matriz, defEleLen):
-        cols = len(matriz[0])
-        print("╔" + "╦".join(["═" * (defEleLen + 2)] * cols) + "╗")
-        for i, fila in enumerate(matriz):
-            print("║", end="")
-            for item in fila:
-                print(" " + VectorPrint.format_item(item, defEleLen) + " ║", end="")
-            print()
-            if i < len(matriz) - 1:
-                print("╠" + "╬".join(["═" * (defEleLen + 2)] * cols) + "╣")
-            else:
-                print("╚" + "╩".join(["═" * (defEleLen + 2)] * cols) + "╝")
 
 
 #--------------------------------------------------------------------------------------------
